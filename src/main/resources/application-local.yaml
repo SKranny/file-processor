@@ -1,0 +1,10 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: file-processor
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      groupId: file-processor-id
