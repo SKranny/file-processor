@@ -7,18 +7,17 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.apache.poi.ss.usermodel.*;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import java.io.*;
-import java.util.Iterator;
 
 @Service
 @RequiredArgsConstructor
 public class ProcessorService {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
+
+    private final ExcelFileValidator excelFileValidatorService;
 
     private final ObjectMapper objectMapper;
     @KafkaListener(topics = "upload-topic", groupId = "file-uploader-id")
@@ -27,44 +26,28 @@ public class ProcessorService {
     }
     @SneakyThrows
     private void fileContentValidation(FileData fileData){
-        File file = new File("/data/"+fileData.getFileName());
-
-        try {
-            BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(file));
-            bufferedOutputStream.write(fileData.getFileBytes());
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-
-        Workbook workbook = WorkbookFactory.create(file);
-        Sheet sheet = workbook.getSheetAt(0);
-        Iterator<Row> rowIterator = sheet.iterator();
-        int rowCount = 0;
-        int cellCount = 0;
-        while (rowIterator.hasNext()){
-            Row row = rowIterator.next();
-            Iterator<Cell> cellIterator = row.cellIterator();
-            while (cellIterator.hasNext()){
-                Cell cell = cellIterator.next();
-                cellCount++;
-                if (cellCount == 3 || cellCount ==6){
-                    break;
-                }
+        int[] result = new int[2];
+        switch (getFileExtensionName(fileData.getFileName())){
+            case ".xls": {
+                result = excelFileValidatorService.validation(fileData.getFileBytes());
             }
-            rowCount++;
-            if (rowCount == 2){
-                break;
+            case ".xlsx":{
+                result = excelFileValidatorService.validation(fileData.getFileBytes());
             }
         }
-        if (rowCount == 2 && cellCount == 6){
+
+        if (result.length == 2 && result[0] == 2 && result[1] == 6){
             kafkaTemplate.send("status-topic",
                     new FileStatusDTO(fileData.getFileName(), FileProcessStatus.SECOND_VALIDATION_COMPLETED));
         }else {
             kafkaTemplate.send("status-topic",
                     new FileStatusDTO(fileData.getFileName(), FileProcessStatus.SECOND_VALIDATION_FAILED));
         }
+    }
 
-        file.delete();
+    private String getFileExtensionName(String filename){
+        int start = filename.lastIndexOf('.');
+        return filename.substring(start);
     }
 
 }
