@@ -40,6 +40,9 @@ public class KafkaConfig {
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapAddress);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        // Using StringDeserializer instead of JsonDeserializer,
+        // because to use JsonDeserializer
+        // we need a shared library with a root data message file or a custom deserializer implementation
         return new DefaultKafkaConsumerFactory<>(props);
     }
 
