@@ -1,7 +1,6 @@
 package com.example.fileprocessor.service;
 
-import com.example.fileprocessor.constant.FileProcessStatus;
-import com.example.fileprocessor.dto.FileStatusDTO;
+
 import lombok.SneakyThrows;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Component;
@@ -22,7 +21,6 @@ public class ExcelFileValidator implements FileValidator {
             Row row = rowIterator.next();
             Iterator<Cell> cellIterator = row.cellIterator();
             while (cellIterator.hasNext()){
-                Cell cell = cellIterator.next();
                 cellCount++;
                 if (cellCount == 3 || cellCount ==6){
                     break;
